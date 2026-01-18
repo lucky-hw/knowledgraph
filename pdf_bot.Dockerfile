@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip config set global.trusted-host pypi.tuna.tsinghua.edu.cn
 RUN pip install --upgrade -r requirements.txt
 
 COPY pdf_bot.py .

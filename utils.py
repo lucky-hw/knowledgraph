@@ -64,6 +64,11 @@ def create_vector_index(driver) -> None:
         driver.query(index_query)
     except:  # Already exists
         pass
+    index_query = "CREATE VECTOR INDEX stackoverflow IF NOT EXISTS FOR (m:Question) ON m.embedding"
+    try:
+        driver.query(index_query)
+    except:  # Already exists
+        pass
     index_query = (
         "CREATE VECTOR INDEX top_answers IF NOT EXISTS FOR (m:Answer) ON m.embedding"
     )
