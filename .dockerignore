@@ -1,0 +1,8 @@
+*
+!*.py
+!requirements.txt
+!*.json
+!*.yml
+!images/*
+!front-end/*
+front-end/node_modules/*

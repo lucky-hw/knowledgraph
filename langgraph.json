@@ -1,0 +1,56 @@
+{
+    "project_name": "customer-support-bot",
+    "description": "客户支持多工具多Agent对话系统",
+    "environment": {
+      "database": {
+        "type": "mysql",
+        "charset": "utf8mb4"
+      }
+    },
+    "llm": {
+      "provider": "siliconflow",
+      "model": "deepseek-ai/DeepSeek-V3",
+      "temperature": 0.3,
+      "max_tokens": 2000,
+      "request_timeout": 350,
+      "max_retries": 2,
+      "api_base": "https://api.siliconflow.cn/v1"
+    },
+    "ocr": {
+      "provider": "siliconflow",
+      "model": "THUDM/GLM-4.1V-9B-Thinking",
+      "temperature": 0.3,
+      "request_timeout": 1000,
+      "max_retries": 1,
+      "api_base": "https://api.siliconflow.cn/v1"
+    },
+    "tools": [
+      "lookup_policy",
+      "fetch_user_order_information",
+      "fetch_order_by_user_id",
+      "fetch_order_by_accompany_id",
+      "check_database_status",
+      "fetch_mcp_server"
+    ],
+    "checkpointer": {
+      "type": "memory",
+      "params": {}
+    },
+    "logging": {
+      "level": "INFO",
+      "log_to_file": false
+    },
+    "debug": {
+      "enable_stream_print": true
+    },
+    "embedding": {
+      "provider": "siliconflow",
+      "model": "Qwen/Qwen3-Embedding-8B",
+      "api_base": "https://api.siliconflow.cn/v1"
+    },
+    "reranker": {
+      "provider": "siliconflow",
+      "model": "Qwen/Qwen3-Reranker-8B",
+      "api_base": "https://api.siliconflow.cn/v1"
+    }
+  }
