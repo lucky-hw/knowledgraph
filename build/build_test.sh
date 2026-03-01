@@ -33,6 +33,6 @@ docker rmi  $REGISTRY/$REPO:$OLD_VERSION_Bot
 docker tag neo4j:5 $REGISTRY/$REPO:$NEW_VERSION_Database
 docker buildx build --platform linux/amd64 -f ./loader.Dockerfile -t $REGISTRY/$REPO:$NEW_VERSION_Loader .
 docker buildx build --platform linux/amd64 -f ./bot.Dockerfile -t $REGISTRY/$REPO:$NEW_VERSION_Bot .
-docker push $REGISTRY/$REPO:$NEW_VERSION_Database
+#docker push $REGISTRY/$REPO:$NEW_VERSION_Database
 docker push $REGISTRY/$REPO:$NEW_VERSION_Loader
 docker push $REGISTRY/$REPO:$NEW_VERSION_Bot

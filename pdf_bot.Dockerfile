@@ -18,6 +18,7 @@ COPY utils.py .
 COPY chains.py .
 COPY langgraph.json .
 COPY search_prompt.yml .
+COPY neo4query.py .
 
 EXPOSE 8503
 

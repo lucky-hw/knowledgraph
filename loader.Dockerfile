@@ -17,6 +17,7 @@ RUN pip install --upgrade -r requirements.txt
 COPY loader.py .
 COPY utils.py .
 COPY chains.py .
+COPY neo4query.py .
 COPY langgraph.json .
 COPY search_prompt.yml .
 COPY images ./images

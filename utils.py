@@ -6,6 +6,7 @@ from langchain.schema.runnable import Runnable,RunnableConfig
 from typing import Dict, Any
 import yaml
 from enum import Enum
+from neo4query import query_dict
 
 load_dotenv(".env")
 url = os.getenv("NEO4J_URI")
@@ -18,9 +19,31 @@ with open(PROMPT_PATH, 'r') as f:
     search_prompt = yaml.safe_load(f)
 
 class SearchType(Enum):
-    product2patent = 1
-    product2people = 2
-    product2paper = 3
+    #product
+    product2people = 1
+    product2company = 2
+    product2patent = 3
+    product2paper = 4
+    #people
+    people2product = 5
+    people2company = 6
+    people2patent = 7
+    people2paper = 8
+    #company
+    company2product = 9
+    company2people = 10
+    company2patent = 11
+    company2paper = 12
+    #patent
+    patent2product = 13
+    patent2people = 14
+    patent2company = 15
+    patent2paper = 16
+    #paper
+    paper2product = 17
+    paper2people = 18
+    paper2company = 19
+    paper2patent = 20
 
 
 # if Neo4j is local, you can go to http://localhost:7474/ to browse the database
@@ -59,11 +82,11 @@ def extract_title_and_question(input_string):
 
 
 def create_vector_index(driver) -> None:
-    index_query = "CREATE VECTOR INDEX zhiku IF NOT EXISTS FOR (m:Question) ON m.embedding"
-    try:
-        driver.query(index_query)
-    except:  # Already exists
-        pass
+    # index_query = "CREATE VECTOR INDEX zhiku IF NOT EXISTS FOR (m:Question) ON m.embedding"
+    # try:
+    #     driver.query(index_query)
+    # except:  # Already exists
+    #     pass
     index_query = "CREATE VECTOR INDEX stackoverflow IF NOT EXISTS FOR (m:Question) ON m.embedding"
     try:
         driver.query(index_query)
@@ -298,22 +321,37 @@ def get_papers(product_name, params = None):
     # print("neo4j res:\n", res)
     return res
 
-def get_template(searchType):
-    return search_prompt["zhiku"]["prompt"][SearchType(searchType).name]
+def get_result(name, query, params = None):
+    query_res = query.format(name)
+    if params is None:
+        params = {"limit": 100}
+    print("neo4j query:\n", query_res)
+    res = neo4j_graph.query(query_res, params)
+    print("neo4j res:\n", res)
+    return res
 
-class Neo4jQueryRunnable(Runnable):    
-    def __init__(self, searchType, cypher_query: str = None):
-        if SearchType(searchType).name == "product2patent":
-            self.query_func = get_patent_content
-        elif SearchType(searchType).name == "product2people":
-            self.query_func = get_patent_people
-        elif SearchType(searchType).name == "product2paper":
-            self.query_func = get_papers
-        else:
-            pass
+def get_template(searchType):
+    return search_prompt["zhiku"]["prompt"][searchType]
+
+class Neo4jQueryRunnable(Runnable):
+    def __init__(self, cypher_query: str = None):
         self.cypher_query = cypher_query
-        self.prompt = get_template(searchType)
+        self.prompt = None
+        self.query_func = get_result
+
+    # def __init__(self, searchType, cypher_query: str = None):
+    #     if SearchType(searchType).name == "product2patent":
+    #         self.query_func = get_patent_content
+    #     elif SearchType(searchType).name == "product2people":
+    #         self.query_func = get_patent_people
+    #     elif SearchType(searchType).name == "product2paper":
+    #         self.query_func = get_papers
+    #     else:
+    #         pass
+    #     self.cypher_query = cypher_query
+    #     self.prompt = get_template(SearchType(searchType).name)
     
+
     def invoke(self, input_dict: Dict[str, Any], config: RunnableConfig = None):
         # 从输入获取查询，或使用预设查询
         if isinstance(input_dict, str):
@@ -321,6 +359,8 @@ class Neo4jQueryRunnable(Runnable):
             prompt = self.prompt
         elif isinstance(input_dict, dict):
             query = input_dict.get("question", self.cypher_query)
+            query_template = query_dict.get(input_dict.get("searchType"))
+            self.prompt = get_template(input_dict.get("searchType"))
             prompt = input_dict.get("prompt", self.prompt)
             if not query:
                 # 如果输入中有问题，可以自动生成查询
@@ -330,5 +370,8 @@ class Neo4jQueryRunnable(Runnable):
         else:
             query = self.cypher_query
             prompt = self.prompt
-        result = self.query_func(query.strip())
+        if not query_template:
+            return {"prompt": prompt + "\n----", "search_result": "error"}
+        result = self.query_func(query.strip(), query_template)
+        print(result)
         return {"prompt": prompt + "\n----", "search_result": result}

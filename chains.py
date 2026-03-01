@@ -29,6 +29,7 @@ import json
 neo4j_patent_content = Neo4jQueryRunnable(SearchType.product2patent)
 neo4j_patent_people = Neo4jQueryRunnable(SearchType.product2people)
 neo4j_papers = Neo4jQueryRunnable(SearchType.product2paper)
+neo4j_search = Neo4jQueryRunnable()
 @lru_cache(maxsize=1)
 def get_config():
     """缓存配置读取，避免重复文件I/O"""
@@ -382,6 +383,32 @@ def configure_qa_paper_chain(llm, embeddings, embeddings_store_url, username, pa
         RunnableParallel(
             {
                 "summaries": neo4j_papers | format_output,
+                "question": RunnablePassthrough(),
+            }
+        )
+        | qa_prompt
+        | llm
+        | StrOutputParser()
+    )
+    return kg_qa
+
+def configure_search_chain(llm, embeddings, embeddings_store_url, username, password):
+    # RAG response
+    #   System: Always talk in pirate speech.
+    general_system_template = """ 
+    {summaries}
+    ----
+    """
+    general_user_template = "Question:```{question}```"
+    messages = [
+        SystemMessagePromptTemplate.from_template(general_system_template),
+        HumanMessagePromptTemplate.from_template(general_user_template),
+    ]
+    qa_prompt = ChatPromptTemplate.from_messages(messages)
+    kg_qa = (
+        RunnableParallel(
+            {
+                "summaries": neo4j_search | format_output,
                 "question": RunnablePassthrough(),
             }
         )

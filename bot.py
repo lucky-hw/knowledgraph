@@ -7,7 +7,7 @@ torch.classes.__path__ = [os.path.join(torch.__path__[0], torch.classes.__file__
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain_neo4j import Neo4jGraph
 from dotenv import load_dotenv
-from utils import create_vector_index
+from utils import create_vector_index, SearchType
 from chains import (
     load_embedding_model,
     load_llm,
@@ -16,7 +16,8 @@ from chains import (
     generate_ticket,
     configure_qa_papent_chain,
     configure_qa_papent_people_chain,
-    configure_qa_paper_chain
+    configure_qa_paper_chain,
+    configure_search_chain
 )
 
 load_dotenv(".env")
@@ -61,15 +62,19 @@ llm_chain = configure_llm_only_chain(llm)
 rag_chain = configure_qa_rag_chain(
     llm, embeddings, embeddings_store_url=url, username=username, password=password
 )
-patent_search = configure_qa_papent_chain(
+search_total = configure_search_chain(
     llm, embeddings, embeddings_store_url=url, username=username, password=password
 )
-people_search = configure_qa_papent_people_chain(
-    llm, embeddings, embeddings_store_url=url, username=username, password=password
-)
-paper_search = configure_qa_paper_chain(
-    llm, embeddings, embeddings_store_url=url, username=username, password=password
-)
+
+# patent_search = configure_qa_papent_chain(
+#     llm, embeddings, embeddings_store_url=url, username=username, password=password
+# )
+# people_search = configure_qa_papent_people_chain(
+#     llm, embeddings, embeddings_store_url=url, username=username, password=password
+# )
+# paper_search = configure_qa_paper_chain(
+#     llm, embeddings, embeddings_store_url=url, username=username, password=password
+# )
 
 
 # Streamlit UI
@@ -131,7 +136,30 @@ def dual_chat_input(key1="input1", key2="input2", placeholder1="第一个输入.
     return input1, input2, submit_clicked
 
 
+
+def mode_select() -> str:
+    options = [member.name for member in SearchType]
+    return st.radio("Select mode", options, horizontal=True)
+
+
+name = mode_select()
+output_function = search_total
+
+if "generated" not in st.session_state:
+    st.session_state[f"generated"] = []
+
+if "user_input" not in st.session_state:
+    st.session_state[f"user_input"] = []
+
+if "rag_mode" not in st.session_state:
+    st.session_state[f"rag_mode"] = []
+
+if "user_prompt" not in st.session_state:
+    st.session_state[f"user_prompt"] = []
+
+
 def chat_input():
+    global name
     user_input, user_prompt, submitted = dual_chat_input(
         placeholder1="输入产品名。",
         placeholder2="输入prompt。无输入则用默认"
@@ -142,11 +170,11 @@ def chat_input():
         if user_input:
             if user_prompt:
                 output = output_function.invoke(
-                    {"question":user_input, "prompt": user_prompt}, config={"callbacks": [stream_handler]}
+                    {"question":user_input, "prompt": user_prompt,"searchType": name}, config={"callbacks": [stream_handler]}
                 )
             else:
                 output = output_function.invoke(
-                    user_input, config={"callbacks": [stream_handler]}
+                    {"question":user_input,"searchType": name}, config={"callbacks": [stream_handler]}
                 )
                 user_prompt =" "
         else:
@@ -176,33 +204,6 @@ def display_chat():
 
         with st.container():
             st.write("&nbsp;")
-
-
-def mode_select() -> str:
-    options = ["patent", "people", "paper"]
-    return st.radio("Select mode", options, horizontal=True)
-
-
-name = mode_select()
-if name == "patent":
-    output_function = patent_search
-elif name == "people":
-    output_function = people_search
-else:
-    output_function = paper_search
-
-if "generated" not in st.session_state:
-    st.session_state[f"generated"] = []
-
-if "user_input" not in st.session_state:
-    st.session_state[f"user_input"] = []
-
-if "rag_mode" not in st.session_state:
-    st.session_state[f"rag_mode"] = []
-
-if "user_prompt" not in st.session_state:
-    st.session_state[f"user_prompt"] = []
-
 
 def open_sidebar():
     st.session_state.open_sidebar = True
