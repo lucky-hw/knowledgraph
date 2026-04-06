@@ -74,7 +74,7 @@ def load_zhiku_data(tag: str = "company", filecontent: str = "") -> None:
 
 def load_all_browse_data(base_dir: str | None = None) -> None:
     if base_dir is None:
-        base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+        base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "input_data")
     sequence = [
         ("entity/company.json", "company"),
         ("entity/product.json", "product"),
