@@ -4,5 +4,6 @@
 !*.json
 !*.yml
 !images/*
+!data/*
 !front-end/*
 front-end/node_modules/*

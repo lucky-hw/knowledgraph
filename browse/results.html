@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>搜索结果 - 医研智库</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+        .sidebar { height: calc(100vh - 65px); }
+        .score-circle { 
+            background: conic-gradient(#1a73e8 var(--percent), #e2e8f0 0);
+        }
+        .ai-badge { background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%); border-left: 4px solid #1a73e8; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .table-header { background-color: #f8fafc; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
+        .modal-content { background-color: #fefefe; margin: 2% auto; padding: 0; border: none; width: 85%; max-width: 1200px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; }
+        .graph-container { width: 100%; height: 600px; background: #fff; border-radius: 12px; }
+        .btn-primary { background-color: #1a73e8; color: white; transition: all 0.2s; }
+        .btn-primary:hover { background-color: #1557b0; transform: translateY(-1px); }
+        .detail-label { font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.025em; }
+        .detail-value { font-size: 0.95rem; color: #1e293b; margin-top: 0.25rem; }
+    </style>
+</head>
+<body class="bg-[#f8f9fa]">
+<!-- Compact Header -->
+<nav class="bg-white border-b border-gray-100 px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+<div class="flex items-center space-x-12">
+<a class="flex items-center space-x-2" href="index.html">
+<div class="w-8 h-8 bg-[#1a73e8] rounded flex items-center justify-center text-white">
+<span class="iconify" data-icon="material-symbols:mitre-square-outline"></span>
+</div>
+<span class="font-bold text-slate-800">医研智库</span>
+</a>
+<!-- Inline Search -->
+<div class="flex items-center w-[500px] bg-gray-50 rounded-lg border border-gray-200 px-3 py-1.5 focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400 transition-all">
+<input class="bg-transparent border-none outline-none flex-1 text-sm text-slate-700" type="text" value="张胜 (上海交通大学)"/>
+<button class="text-[#1a73e8] ml-2"><span class="iconify w-5 h-5" data-icon="material-symbols:search"></span></button>
+</div>
+</div>
+<div class="flex items-center space-x-6 text-sm">
+<a class="text-slate-500 hover:text-[#1a73e8]" href="competition.html">竞品对比</a>
+<div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center border border-blue-200 text-[#1a73e8]">
+<span class="iconify w-5 h-5" data-icon="material-symbols:person"></span>
+</div>
+</div>
+</nav>
+<div class="flex">
+<!-- Sidebar Filters -->
+<aside class="w-72 sidebar bg-white border-r border-gray-100 p-6 sticky top-[65px] overflow-y-auto hidden lg:block">
+<h3 class="font-bold text-slate-800 mb-6 flex items-center">
+<span class="iconify mr-2" data-icon="material-symbols:filter-alt-outline"></span> 维度筛选
+            </h3>
+<div class="space-y-8">
+<!-- Group 1: 数据范畴 -->
+<div>
+<label class="text-xs font-bold text-gray-400 uppercase tracking-wider">数据范畴</label>
+<div class="mt-3 space-y-3">
+<label class="flex items-center text-sm text-slate-600 cursor-pointer">
+<input checked="" class="mr-3 w-4 h-4 text-[#1a73e8] focus:ring-[#1a73e8]" name="category" onchange="switchCategory('expert')" type="radio" value="expert"/>
+    关联专家
+</label>
+<label class="flex items-center text-sm text-slate-600 cursor-pointer">
+<input class="mr-3 w-4 h-4 text-[#1a73e8] focus:ring-[#1a73e8]" name="category" onchange="switchCategory('enterprise')" type="radio" value="enterprise"/>
+    关联企业
+</label>
+<label class="flex items-center text-sm text-slate-600 cursor-pointer">
+<input class="mr-3 w-4 h-4 text-[#1a73e8] focus:ring-[#1a73e8]" name="category" onchange="switchCategory('patent')" type="radio" value="patent"/>
+    关联专利
+</label>
+<label class="flex items-center text-sm text-slate-600 cursor-pointer">
+<input class="mr-3 w-4 h-4 text-[#1a73e8] focus:ring-[#1a73e8]" name="category" onchange="switchCategory('paper')" type="radio" value="paper"/>
+    关联论文
+</label>
+<label class="flex items-center text-sm text-slate-600 cursor-pointer">
+<input class="mr-3 w-4 h-4 text-[#1a73e8] focus:ring-[#1a73e8]" name="category" onchange="switchCategory('product')" type="radio" value="product"/>
+    关联产品
+</label>
+</div>
+</div>
+<!-- Group 2 -->
+<div>
+<label class="text-xs font-bold text-gray-400 uppercase tracking-wider">关联评分 (Score)</label>
+<div class="mt-4 px-2">
+<input class="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#1a73e8]" type="range">
+<div class="flex justify-between text-[10px] text-gray-400 mt-1">
+<span>0.1</span>
+<span>0.5</span>
+<span>1.0</span>
+</div>
+</input></div>
+</div>
+</div>
+<div class="mt-12 p-4 bg-blue-50 border border-blue-100 rounded-xl">
+<p class="text-[10px] text-blue-500 font-bold uppercase mb-1">系统提示</p>
+<p class="text-xs text-blue-800 leading-relaxed">当前日期: 2026-03-26。正在查看检索结果。系统已根据语义分析自动建立关联，点击行内“概览”查看详细信息卡片。</p>
+</div>
+</aside>
+<!-- Main Results -->
+<main class="flex-1 p-8">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h2 class="text-2xl font-bold text-slate-800" id="resultsTitle">检索结果 - 关联专家</h2>
+<p class="text-slate-500 text-sm mt-1">为您找到 152 个相关的学术关联点 (数据截至 2026-03-26)</p>
+</div>
+<div class="flex items-center space-x-3">
+<button class="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all font-semibold" onclick="showIntegratedGraph()">
+<span class="iconify mr-2" data-icon="material-symbols:account-tree"></span>
+        生成综合知识图谱
+    </button>
+<div class="h-10 w-px bg-gray-200 mx-2"></div>
+<div class="flex items-center space-x-2 text-sm text-gray-500 bg-white border border-gray-200 px-3 py-2 rounded-lg">
+<span>排序方式:</span>
+<select class="bg-transparent border-none focus:ring-0 text-slate-800 font-medium cursor-pointer">
+<option>关联度评分由高到低</option>
+<option>发表时间</option>
+<option>引用频次</option>
+</select>
+</div>
+</div>
+</div>
+<!-- List Tables Container -->
+<div class="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+<!-- 关联专家 Table -->
+<div class="tab-content active" id="expert-content">
+<div class="mb-6 flex items-center justify-between p-4 bg-white border-b border-gray-100">
+<div class="flex items-center space-x-2">
+<span class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold">专家库</span>
+<span class="text-sm text-slate-500 font-medium">共找到 15 位关联专家</span>
+</div>
+<button class="px-4 py-2 border border-blue-200 text-[#1a73e8] rounded-lg text-sm font-bold hover:bg-blue-50 flex items-center shadow-sm transition-all group" onclick="showCategoryGraph('expert')">
+<span class="iconify mr-2 group-hover:rotate-12 transition-transform" data-icon="material-symbols:scatter-plot-outline"></span> 查看专家知识图谱
+            </button>
+</div>
+<table class="w-full text-left text-sm">
+<thead class="table-header border-b border-gray-100">
+<tr>
+<th class="px-6 py-4 font-bold text-slate-700">序号</th>
+<th class="px-6 py-4 font-bold text-slate-700">姓名</th>
+<th class="px-6 py-4 font-bold text-slate-700">单位</th>
+<th class="px-6 py-4 font-bold text-slate-700">专家概览</th>
+<th class="px-6 py-4 font-bold text-slate-700">关联依据</th>
+<th class="px-6 py-4 font-bold text-slate-700">详细主页</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-50" id="expertTableBody">
+<!-- Data will be injected by script -->
+</tbody>
+</table>
+</div>
+<!-- 关联企业 Table -->
+<div class="tab-content" id="enterprise-content">
+<div class="mb-6 flex items-center justify-between p-4 bg-white border-b border-gray-100">
+<div class="flex items-center space-x-2">
+<span class="px-3 py-1 bg-orange-50 text-orange-600 rounded-full text-xs font-bold">企业库</span>
+<span class="text-sm text-slate-500 font-medium">共找到 150+ 家关联企业</span>
+</div>
+<button class="px-4 py-2 border border-orange-200 text-orange-600 rounded-lg text-sm font-bold hover:bg-orange-50 flex items-center shadow-sm transition-all group" onclick="showCategoryGraph('enterprise')">
+<span class="iconify mr-2 group-hover:rotate-12 transition-transform" data-icon="material-symbols:scatter-plot-outline"></span> 查看企业知识图谱
+            </button>
+</div>
+<table class="w-full text-left text-sm">
+<thead class="table-header border-b border-gray-100">
+<tr>
+<th class="px-6 py-4 font-bold text-slate-700">序号</th>
+<th class="px-6 py-4 font-bold text-slate-700">公司名称</th>
+<th class="px-6 py-4 font-bold text-slate-700">法定代表人</th>
+<th class="px-6 py-4 font-bold text-slate-700">公司概览</th>
+<th class="px-6 py-4 font-bold text-slate-700">关联依据</th>
+<th class="px-6 py-4 font-bold text-slate-700">详情</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-50" id="enterpriseTableBody">
+<!-- Data will be injected by script -->
+</tbody>
+</table>
+</div>
+<!-- 关联专利 Table -->
+<div class="tab-content" id="patent-content">
+<div class="mb-6 flex items-center justify-between p-4 bg-white border-b border-gray-100">
+<div class="flex items-center space-x-2">
+<span class="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-xs font-bold">专利库</span>
+<span class="text-sm text-slate-500 font-medium">共找到 150+ 关联专利</span>
+</div>
+<button class="px-4 py-2 border border-emerald-200 text-emerald-600 rounded-lg text-sm font-bold hover:bg-emerald-50 flex items-center shadow-sm transition-all group" onclick="showCategoryGraph('patent')">
+<span class="iconify mr-2 group-hover:rotate-12 transition-transform" data-icon="material-symbols:scatter-plot-outline"></span> 查看专利知识图谱
+            </button>
+</div>
+<table class="w-full text-left text-sm">
+<thead class="table-header border-b border-gray-100">
+<tr>
+<th class="px-6 py-4 font-bold text-slate-700">序号</th>
+<th class="px-6 py-4 font-bold text-slate-700">专利名称</th>
+<th class="px-6 py-4 font-bold text-slate-700">公开号</th>
+<th class="px-6 py-4 font-bold text-slate-700">权利要求</th>
+<th class="px-6 py-4 font-bold text-slate-700">关联依据</th>
+<th class="px-6 py-4 font-bold text-slate-700">链接</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-50" id="patentTableBody">
+<!-- Data will be injected by script -->
+</tbody>
+</table>
+</div>
+<!-- 关联论文 Table -->
+<div class="tab-content" id="paper-content">
+<div class="mb-6 flex items-center justify-between p-4 bg-white border-b border-gray-100">
+<div class="flex items-center space-x-2">
+<span class="px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-xs font-bold">论文库</span>
+<span class="text-sm text-slate-500 font-medium">共找到 150+ 关联论文</span>
+</div>
+<button class="px-4 py-2 border border-purple-200 text-purple-600 rounded-lg text-sm font-bold hover:bg-purple-50 flex items-center shadow-sm transition-all group" onclick="showCategoryGraph('paper')">
+<span class="iconify mr-2 group-hover:rotate-12 transition-transform" data-icon="material-symbols:scatter-plot-outline"></span> 查看论文知识图谱
+            </button>
+</div>
+<table class="w-full text-left text-sm">
+<thead class="table-header border-b border-gray-100">
+<tr>
+<th class="px-6 py-4 font-bold text-slate-700">序号</th>
+<th class="px-6 py-4 font-bold text-slate-700">论文名称</th>
+<th class="px-6 py-4 font-bold text-slate-700">第一作者</th>
+<th class="px-6 py-4 font-bold text-slate-700">论文概览</th>
+<th class="px-6 py-4 font-bold text-slate-700">关联依据</th>
+<th class="px-6 py-4 font-bold text-slate-700">链接</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-50" id="paperTableBody">
+<!-- Data will be injected by script -->
+</tbody>
+</table>
+</div>
+<!-- 关联产品 Table -->
+<div class="tab-content" id="product-content">
+<div class="mb-6 flex items-center justify-between p-4 bg-white border-b border-gray-100">
+<div class="flex items-center space-x-2">
+<span class="px-3 py-1 bg-red-50 text-red-600 rounded-full text-xs font-bold">产品库</span>
+<span class="text-sm text-slate-500 font-medium">共找到 20+ 关联产品</span>
+</div>
+<button class="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-bold hover:bg-red-50 flex items-center shadow-sm transition-all group" onclick="showCategoryGraph('product')">
+<span class="iconify mr-2 group-hover:rotate-12 transition-transform" data-icon="material-symbols:scatter-plot-outline"></span> 查看产品知识图谱
+            </button>
+</div>
+<table class="w-full text-left text-sm">
+<thead class="table-header border-b border-gray-100">
+<tr>
+<th class="px-6 py-4 font-bold text-slate-700">序号</th>
+<th class="px-6 py-4 font-bold text-slate-700">产品名称</th>
+<th class="px-6 py-4 font-bold text-slate-700">注册证号</th>
+<th class="px-6 py-4 font-bold text-slate-700">产品详细信息</th>
+<th class="px-6 py-4 font-bold text-slate-700">关联依据</th>
+<th class="px-6 py-4 font-bold text-slate-700">链接</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-50" id="productTableBody">
+<!-- Data will be injected by script -->
+</tbody>
+</table>
+</div>
+</div> <td class="px-6 py-4 text-slate-600">上海研产生物</td>
+<td class="px-6 py-4">
+<button class="text-[#1a73e8] hover:underline flex items-center" onclick="openModal('productModal')">
+<span class="iconify mr-1" data-icon="material-symbols:medical-information"></span> 详细信息
+                        </button>
+</td>
+<td class="px-6 py-4 text-slate-500 italic">"专家专利转化的成熟三类医疗器械"</td>
+<td class="px-6 py-4">
+<a class="text-slate-400 hover:text-blue-600" href="#"><span class="iconify text-xl" data-icon="material-symbols:link"></span></a>
+</td>
+
+
+
+</main></div>
+
+<!-- Modals Section -->
+<!-- 专家卡片 -->
+<div class="modal" id="expertModal">
+<div class="modal-content max-w-4xl p-0">
+<div class="bg-[#1a73e8] p-6 flex justify-between items-center text-white">
+<h3 class="text-xl font-bold">专家详细信息档案</h3>
+<button class="hover:bg-blue-600 rounded-full p-1 text-2xl transition-colors" onclick="closeModal('expertModal')">×</button>
+</div>
+<div class="p-8 overflow-y-auto max-h-[80vh]">
+<div class="flex flex-col md:flex-row gap-8 mb-8 border-b border-gray-100 pb-8">
+<div class="w-full md:w-48">
+<img alt="专家照片" class="w-full h-64 object-cover rounded-xl shadow-md border-2 border-white ring-4 ring-blue-50" src="https://images.unsplash.com/photo-1559839734-2b71f1e598c6?auto=format&amp;fit=crop&amp;q=80&amp;w=200&amp;h=260"/>
+<div class="mt-4 space-y-2">
+<div class="flex items-center text-sm text-slate-600">
+<span class="iconify mr-2 text-[#1a73e8]" data-icon="material-symbols:mail-outline"></span> zhang.s@sjtu.edu.cn
+                        </div>
+<div class="flex items-center text-sm text-slate-600">
+<span class="iconify mr-2 text-[#1a73e8]" data-icon="material-symbols:call-outline"></span> 021-6888XXXX
+                        </div>
+</div>
+</div>
+<div class="flex-1 grid grid-cols-2 gap-x-6 gap-y-4">
+<div class="col-span-2"><label class="detail-label">姓名</label><p class="text-2xl font-bold text-slate-800">张胜 <span class="text-sm font-normal text-slate-500 ml-2">男 | 1978年05月</span></p></div>
+<div class="col-span-2"><label class="detail-label">当前职务</label><p class="text-lg text-[#1a73e8] font-medium">上海交通大学医学院 附属瑞金医院骨科教授 / 博士生导师</p></div>
+<div><label class="detail-label">教育背景</label><p class="text-sm text-slate-700">复旦大学 | 临床医学 | 博士学位</p></div>
+<div><label class="detail-label">留学经历</label><p class="text-sm text-slate-700">德国海德堡大学 | 访问学者 (2015-2017)</p></div>
+<div class="col-span-2"><label class="detail-label">研究方向</label><p class="text-sm text-slate-700">可降解生物材料、镁合金支架免疫调节、骨科植入物表面改性</p></div>
+<div class="col-span-2"><label class="detail-label">资质认证</label><p class="text-sm text-slate-700">主任医师、国家杰出青年科学基金获得者、长江学者特聘教授</p></div>
+</div>
+</div>
+<div class="space-y-8">
+<section>
+<h4 class="flex items-center text-slate-800 font-bold mb-4 border-l-4 border-[#1a73e8] pl-3">职业经历时间轴</h4>
+<div class="relative pl-6 border-l-2 border-blue-100 ml-3 space-y-6">
+<div class="relative"><span class="absolute -left-[31px] w-4 h-4 bg-white border-4 border-[#1a73e8] rounded-full"></span><p class="text-xs font-bold text-[#1a73e8]">2020.06 - 至今</p><p class="text-sm font-medium text-slate-800">上海交通大学医学院附属瑞金医院 - 骨科中心主任</p></div>
+<div class="relative"><span class="absolute -left-[31px] w-4 h-4 bg-white border-4 border-blue-300 rounded-full"></span><p class="text-xs font-bold text-slate-400">2012.09 - 2020.05</p><p class="text-sm text-slate-600">复旦大学附属华山医院 - 副主任医师/副教授</p></div>
+</div>
+</section>
+<section>
+<h4 class="flex items-center text-slate-800 font-bold mb-4 border-l-4 border-[#1a73e8] pl-3">核心学术成果</h4>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+<span class="text-xs font-bold text-[#1a73e8] block mb-1">代表论文</span>
+<p class="text-sm text-slate-700">"Immune-modulatory Magnesium Scaffolds..." published in <span class="italic text-blue-600">Nature Materials</span> (2025)</p>
+</div>
+<div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+<span class="text-xs font-bold text-[#1a73e8] block mb-1">发明专利</span>
+<p class="text-sm text-slate-700">ZL202310XXXXXX.X: 一种具有免疫调节功能的镁基生物活性支架</p>
+</div>
+</div>
+</section>
+<div class="grid grid-cols-2 gap-6">
+<section>
+<h4 class="text-slate-800 font-bold mb-3 border-l-4 border-[#1a73e8] pl-3 text-sm">荣誉与奖项</h4>
+<ul class="text-xs text-slate-600 list-disc pl-5 space-y-1">
+<li>国家科学技术进步二等奖 (2025)</li>
+<li>教育部自然科学一等奖 (2023)</li>
+</ul>
+</section>
+<section>
+<h4 class="text-slate-800 font-bold mb-3 border-l-4 border-[#1a73e8] pl-3 text-sm">协会与评审</h4>
+<ul class="text-xs text-slate-600 list-disc pl-5 space-y-1">
+<li>中国生物材料学会 常务理事</li>
+<li>国家药监局 医疗器械技术审评专家</li>
+</ul>
+</section>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 企业卡片 -->
+<div class="modal" id="companyModal">
+<div class="modal-content max-w-4xl p-0">
+<div class="bg-[#f97316] p-6 flex justify-between items-center text-white">
+<h3 class="text-xl font-bold text-white flex items-center"><span class="iconify mr-2" data-icon="material-symbols:business"></span> 企业全景画像</h3>
+<button class="hover:bg-orange-600 rounded-full p-1 text-2xl transition-colors" onclick="closeModal('companyModal')">×</button>
+</div>
+<div class="p-8 overflow-y-auto max-h-[85vh]">
+<div class="grid grid-cols-3 gap-6 mb-8 border-b border-gray-100 pb-8">
+<div class="col-span-3 lg:col-span-2">
+<div class="flex items-center space-x-4 mb-4">
+<div class="w-16 h-16 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600 font-bold text-2xl">研产</div>
+<div>
+<h2 class="text-2xl font-bold text-slate-800">上海研产生物科技有限公司</h2>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">存续（在营）</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-x-8 gap-y-4">
+<div><label class="detail-label">法定代表人</label><p class="detail-value">张胜</p></div>
+<div><label class="detail-label">成立日期</label><p class="detail-value">2021-06-15</p></div>
+<div><label class="detail-label">注册资本</label><p class="detail-value">1250.00万人民币</p></div>
+<div><label class="detail-label">实缴资本</label><p class="detail-value">800.00万人民币</p></div>
+<div class="col-span-2"><label class="detail-label">统一社会信用代码</label><p class="detail-value">91310115MA1HXXXXXX</p></div>
+</div>
+</div>
+<div class="col-span-3 lg:col-span-1 bg-gray-50 p-6 rounded-2xl border border-gray-100">
+<h4 class="text-sm font-bold text-slate-700 mb-4 flex items-center"><span class="iconify mr-2 text-orange-500" data-icon="material-symbols:group-outline"></span> 股权结构及人员</h4>
+<div class="space-y-3">
+<div class="flex justify-between items-center text-sm"><span class="text-slate-600">张胜 (创始股东)</span><span class="font-bold text-slate-800">45%</span></div>
+<div class="flex justify-between items-center text-sm"><span class="text-slate-600">上海研创合伙企业</span><span class="font-bold text-slate-800">25%</span></div>
+<div class="flex justify-between items-center text-sm"><span class="text-slate-600">晨晖资本 (VC)</span><span class="font-bold text-slate-800">30%</span></div>
+<div class="mt-4 pt-4 border-t border-gray-200">
+<p class="text-xs text-slate-500">人员规模：50-99人</p>
+<p class="text-xs text-slate-500">参保人数：42人</p>
+</div>
+</div>
+</div>
+</div>
+<div class="space-y-8">
+<section>
+<h4 class="text-slate-800 font-bold mb-4 flex items-center"><span class="iconify mr-2 text-orange-500" data-icon="material-symbols:list-alt-outline"></span> 经营与财务</h4>
+<p class="text-sm text-slate-600 leading-relaxed mb-4">经营范围：生物科技领域内的技术开发、技术咨询、技术转让、技术服务；三类医疗器械生产；二类医疗器械销售...</p>
+<div class="grid grid-cols-4 gap-4">
+<div class="text-center p-3 bg-blue-50 rounded-lg"><p class="text-xs text-blue-500">资质证书</p><p class="font-bold text-slate-800 text-lg">12</p></div>
+<div class="text-center p-3 bg-green-50 rounded-lg"><p class="text-xs text-green-500">招投标数</p><p class="font-bold text-slate-800 text-lg">5</p></div>
+<div class="text-center p-3 bg-red-50 rounded-lg"><p class="text-xs text-red-500">司法案件</p><p class="font-bold text-slate-800 text-lg">0</p></div>
+<div class="text-center p-3 bg-gray-50 rounded-lg"><p class="text-xs text-gray-500">行政处罚</p><p class="font-bold text-slate-800 text-lg">0</p></div>
+</div>
+</section>
+<section>
+<h4 class="text-slate-800 font-bold mb-4 flex items-center"><span class="iconify mr-2 text-orange-500" data-icon="material-symbols:copyright-outline"></span> 知识产权及舆情</h4>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<div class="flex justify-between mb-2 text-xs font-medium"><span class="text-slate-500">专利信息</span><span class="text-orange-600">8件</span></div>
+<div class="flex justify-between mb-2 text-xs font-medium"><span class="text-slate-500">商标信息</span><span class="text-orange-600">15件</span></div>
+<div class="flex justify-between mb-2 text-xs font-medium"><span class="text-slate-500">软件著作权</span><span class="text-orange-600">3件</span></div>
+</div>
+<div class="border-l border-gray-100 pl-6">
+<p class="text-xs font-bold text-slate-700 mb-2">近期新闻</p>
+<ul class="text-xs text-slate-500 space-y-2">
+<li class="hover:text-orange-600 cursor-pointer">· 2026.03: 研产生物入选“2026年度科技小巨人”企业名单</li>
+<li class="hover:text-orange-600 cursor-pointer">· 2025.11: 核心产品“可降解镁合金支架”获药监局临床许可</li>
+</ul>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</div>
+<!-- 专利卡片 -->
+<div class="modal" id="patentModal">
+<div class="modal-content max-w-5xl p-0 overflow-hidden">
+<div class="bg-[#10b981] p-6 flex justify-between items-center text-white">
+<div class="flex items-center">
+<span class="iconify text-2xl mr-3" data-icon="material-symbols:gavel"></span>
+<h3 class="text-xl font-bold">专利详细详情与权利要求</h3>
+</div>
+<div class="flex items-center space-x-4">
+<div class="flex bg-emerald-700 rounded-lg p-1">
+<button class="px-4 py-1 rounded-md bg-white shadow-sm text-emerald-700 text-sm font-bold" id="btn-zh" onclick="switchLang('zh')">中文</button>
+<button class="px-4 py-1 rounded-md text-emerald-100 text-sm hover:bg-emerald-600" id="btn-en" onclick="switchLang('en')">EN</button>
+</div>
+<button class="hover:bg-emerald-600 rounded-full p-1 text-2xl transition-colors" onclick="closeModal('patentModal')">×</button>
+</div>
+</div>
+<div class="p-8 grid grid-cols-12 gap-8 overflow-y-auto max-h-[85vh]">
+<div class="col-span-12 lg:col-span-4 space-y-6 bg-gray-50 p-6 rounded-2xl border border-gray-100 h-fit">
+<div><label class="detail-label">专利名称</label><p class="text-slate-800 font-bold mt-1">一种具有免疫调节功能的镁基生物活性支架</p></div>
+<div class="grid grid-cols-2 gap-4">
+<div><label class="detail-label">申请号</label><p class="text-sm text-slate-700">CN202410XXXXXX.X</p></div>
+<div><label class="detail-label">申请日</label><p class="text-sm text-slate-700">2024-03-21</p></div>
+<div><label class="detail-label">公开号</label><p class="text-sm text-slate-700">CN117XXXXXXA</p></div>
+<div><label class="detail-label">法律状态</label><p class="text-sm font-bold text-emerald-600">授权</p></div>
+</div>
+<div><label class="detail-label">申请人/专利权人</label><p class="text-sm text-slate-700">上海交通大学</p></div>
+<div><label class="detail-label">发明人</label><p class="text-sm text-slate-700">张胜, 李华, 钱学峰</p></div>
+</div>
+<div class="col-span-12 lg:col-span-8 space-y-8">
+<section>
+<h4 class="text-slate-800 font-bold mb-3 flex items-center border-b border-gray-100 pb-2"><span class="iconify mr-2 text-emerald-500" data-icon="material-symbols:article-outline"></span> 摘要 (Abstract)</h4>
+<p class="text-sm text-slate-600 leading-relaxed bg-emerald-50/50 p-4 rounded-xl">本发明提供了一种具有免疫调节功能的镁基生物活性支架，旨在解决现有骨科植入物引发的慢性炎症反应问题。通过微弧氧化技术与自组装技术，在镁合金表面构建了具有双层结构的生物活性涂层，能够实现在植入早期精准释放镁离子及缓释抗炎细胞因子...</p>
+</section>
+<section>
+<h4 class="text-slate-800 font-bold mb-3 flex items-center border-b border-gray-100 pb-2"><span class="iconify mr-2 text-emerald-500" data-icon="material-symbols:format-list-numbered"></span> 权利要求书 (Claims)</h4>
+<div class="space-y-4 text-sm text-slate-700 leading-relaxed overflow-y-auto max-h-[300px] pr-4" id="claim-zh">
+<p class="font-bold">1. 一种具有免疫调节功能的镁基生物活性支架，其特征在于，所述支架包括：</p>
+<ul class="list-disc pl-5 space-y-2">
+<li>镁合金基体，所述镁合金中镁的质量分数为95%以上；</li>
+<li>包覆在所述镁合金基体表面的多孔活性涂层；</li>
+<li>负载于所述涂层孔隙内的免疫调节微球，其特征在于所述微球包含可降解高分子基质和抗炎因子IL-10。</li>
+</ul>
+<p>2. 根据权利要求1所述的镁基生物活性支架，其特征在于，所述多孔活性涂层的平均孔径为10-50微米。</p>
+</div>
+<div class="hidden space-y-4 text-sm text-slate-700 leading-relaxed italic overflow-y-auto max-h-[300px] pr-4" id="claim-en">
+<p class="font-bold">1. An immune-modulatory magnesium-based bioactive scaffold, characterized in that the scaffold comprises:</p>
+<ul class="list-disc pl-5 space-y-2">
+<li>A magnesium alloy substrate, wherein the mass fraction of magnesium in the magnesium alloy is more than 95%;</li>
+<li>A porous bioactive coating covering the surface of the magnesium alloy substrate...</li>
+</ul>
+</div>
+</section>
+</div>
+</div>
+</div>
+</div>
+<!-- 论文卡片 -->
+<div class="modal" id="paperModal">
+<div class="modal-content max-w-5xl p-0 overflow-hidden">
+<div class="bg-[#8b5cf6] p-6 flex justify-between items-center text-white">
+<div class="flex items-center">
+<span class="iconify text-2xl mr-3" data-icon="material-symbols:school-outline"></span>
+<h3 class="text-xl font-bold">学术文献详细报告</h3>
+</div>
+<button class="hover:bg-purple-600 rounded-full p-1 text-2xl transition-colors" onclick="closeModal('paperModal')">×</button>
+</div>
+<div class="p-8 grid grid-cols-12 gap-8 overflow-y-auto max-h-[85vh]">
+<div class="col-span-12 lg:col-span-8 space-y-8">
+<div>
+<h2 class="text-2xl font-bold text-slate-800 leading-tight">Immune-modulatory Magnesium Scaffolds for Enhanced Bone Regeneration and Inflammation Control</h2>
+<p class="text-sm text-slate-500 mt-2">作者：Sheng Zhang, Hua Li, et al. | 上海交通大学医学院附属瑞金医院骨科</p>
+</div>
+<section>
+<h4 class="text-slate-800 font-bold mb-3 flex items-center text-sm uppercase tracking-wider text-purple-600 border-b border-purple-100 pb-2">摘要 (Abstract)</h4>
+<p class="text-sm text-slate-600 leading-relaxed text-justify">Magnesium-based biomaterials have emerged as promising candidates for orthopedic applications due to their biodegradability and osteoinductive properties. However, their rapid corrosion often triggers excessive inflammatory responses, hindering tissue healing. Here, we present a novel immune-modulatory magnesium scaffold designed to orchestrate the local immune microenvironment...</p>
+</section>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+<h5 class="text-xs font-bold text-slate-400 mb-2 uppercase">出版信息</h5>
+<p class="text-sm text-slate-700">期刊: <span class="font-bold">Biomaterials</span> | 2025年 12卷</p>
+<p class="text-sm text-slate-700">DOI: 10.1016/j.biomaterials.2025.123456</p>
+<p class="text-sm text-slate-700">ISSN: 0142-9612</p>
+</div>
+<div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+<h5 class="text-xs font-bold text-slate-400 mb-2 uppercase">影响力指标</h5>
+<div class="flex space-x-6">
+<div class="text-center">
+<p class="text-2xl font-bold text-purple-600">128</p>
+<p class="text-[10px] text-slate-500">被引次数</p>
+</div>
+<div class="text-center">
+<p class="text-2xl font-bold text-purple-600">2.4k</p>
+<p class="text-[10px] text-slate-500">下载量</p>
+</div>
+<div class="text-center">
+<p class="text-2xl font-bold text-green-600">15.8</p>
+<p class="text-[10px] text-slate-500">影响因子</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="col-span-12 lg:col-span-4 space-y-6">
+<div class="bg-purple-50 p-6 rounded-2xl border border-purple-100">
+<h4 class="font-bold text-purple-800 text-sm mb-4">文献分类</h4>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-white text-purple-600 border border-purple-200 rounded-full text-xs">研究论文</span>
+<span class="px-3 py-1 bg-white text-purple-600 border border-purple-200 rounded-full text-xs">生物医学工程</span>
+<span class="px-3 py-1 bg-white text-purple-600 border border-purple-200 rounded-full text-xs">SCI一区</span>
+</div>
+<h4 class="font-bold text-purple-800 text-sm mt-6 mb-4">关键词</h4>
+<div class="space-y-2">
+<p class="text-sm text-slate-600">· Magnesium Alloys</p>
+<p class="text-sm text-slate-600">· Immune Microenvironment</p>
+<p class="text-sm text-slate-600">· Macrophage Polarization</p>
+<p class="text-sm text-slate-600">· Bone Tissue Engineering</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div> 
+
+
+
+<!-- 产品卡片 -->
+<div class="modal" id="productModal">
+<div class="modal-content max-w-4xl">
+<div class="flex justify-between items-start mb-6 border-b pb-4">
+<div>
+<h3 class="text-xl font-bold text-slate-800">医疗器械产品详细信息</h3>
+<p class="text-xs text-gray-400 mt-1">数据来源: NMPA (截至 2026-03-26)</p>
+</div>
+<button class="text-gray-400 hover:text-gray-600 text-2xl" onclick="closeModal('productModal')">×</button>
+</div>
+<div class="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
+<div><label class="text-xs text-gray-400">注册证编号</label><p class="text-slate-800 font-medium">国械注准20253131000</p></div>
+<div><label class="text-xs text-gray-400">管理类别</label><p class="text-slate-800 font-medium">第三类</p></div>
+<div><label class="text-xs text-gray-400">注册人名称</label><p class="text-slate-800 font-medium">上海研产生物科技有限公司</p></div>
+<div><label class="text-xs text-gray-400">审批部门</label><p class="text-slate-800 font-medium">国家药品监督管理局</p></div>
+<div class="col-span-2"><label class="text-xs text-gray-400">注册人住所</label><p class="text-slate-800">上海市浦东新区张江高科技园区XXX路XXX号</p></div>
+<div class="col-span-2"><label class="text-xs text-gray-400">生产地址</label><p class="text-slate-800">上海市奉贤区生物医药产业基地YYY号</p></div>
+<div class="col-span-2"><label class="text-xs text-gray-400">产品名称</label><p class="text-slate-800 font-bold text-lg">可降解镁金属接骨螺钉</p></div>
+<div class="col-span-2"><label class="text-xs text-gray-400">型号规格</label><p class="text-slate-600">MG-S-2.0, MG-S-2.5, MG-S-3.0, MG-S-3.5, MG-S-4.0</p></div>
+<div class="col-span-2"><label class="text-xs text-gray-400">结构及组成</label><p class="text-slate-600">该产品由镁合金（Mg-Zn-Ca）制成，表面经过微弧氧化处理。无菌包装，一次性使用。</p></div>
+<div class="col-span-2 bg-gray-50 p-3 rounded"><label class="text-xs text-gray-400">适用范围</label><p class="text-slate-600">适用于四肢骨折、骨不连及截骨术后的内固定，特别适用于需要二次手术取出的青少年及老年患者。</p></div>
+<div><label class="text-xs text-gray-400">批准日期</label><p class="text-slate-800">2025-03-12</p></div>
+<div><label class="text-xs text-gray-400">有效期至</label><p class="text-[#1a73e8] font-bold">2030-03-11</p></div>
+</div>
+</div>
+</div>
+<!-- Knowledge Graph Modal -->
+<div class="modal" id="graphModal">
+<div class="modal-content relative">
+<div class="flex items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50">
+<div class="flex items-center space-x-3">
+<div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-200">
+<span class="iconify w-6 h-6" data-icon="material-symbols:bubble-chart-outline"></span>
+</div>
+<div>
+<h3 class="text-xl font-bold text-slate-800 tracking-tight" id="graphTitle">知识图谱分析</h3>
+<p class="text-xs text-slate-500 font-medium uppercase tracking-wider">智能语义关联挖掘 (截至 2026-03-26)</p>
+</div>
+</div>
+<div class="flex items-center space-x-2">
+<button class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-gray-50 flex items-center shadow-sm transition-all active:scale-95" onclick="exportGraph('img')">
+<span class="iconify mr-2" data-icon="material-symbols:image-outline"></span> 导出图片
+                </button>
+<button class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-gray-50 flex items-center shadow-sm transition-all active:scale-95" onclick="exportGraph('pdf')">
+<span class="iconify mr-2" data-icon="material-symbols:picture-as-pdf-outline"></span> 导出PDF
+                </button>
+<div class="h-6 w-px bg-gray-200 mx-2"></div>
+<div class="relative group">
+<button class="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-bold flex items-center hover:bg-blue-100 transition-all">
+<span class="iconify mr-2" data-icon="material-symbols:share"></span> 分享
+                    </button>
+<div class="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 p-2">
+<button class="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-gray-50 rounded-lg flex items-center">
+<span class="iconify mr-3 text-green-500 w-5 h-5" data-icon="ic:baseline-wechat"></span> 微信好友
+                        </button>
+<button class="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-gray-50 rounded-lg flex items-center">
+<span class="iconify mr-3 text-blue-500 w-5 h-5" data-icon="ic:baseline-email"></span> 邮件分享
+                        </button>
+<button class="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-gray-50 rounded-lg flex items-center">
+<span class="iconify mr-3 text-sky-400 w-5 h-5" data-icon="ic:baseline-qq"></span> QQ好友
+                        </button>
+</div>
+</div>
+<button class="ml-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-gray-100 rounded-full transition-all" onclick="closeModal('graphModal')">
+<span class="iconify w-6 h-6" data-icon="material-symbols:close"></span>
+</button>
+</div>
+</div>
+<div class="p-6 bg-white relative">
+<div class="graph-container" id="mainGraph"></div>
+<!-- Graph Legend -->
+<div class="absolute bottom-10 left-10 p-4 bg-white/80 backdrop-blur border border-gray-100 rounded-xl shadow-lg flex flex-col space-y-2" id="graphLegend">
+<div class="flex items-center text-xs font-bold text-slate-700">
+<span class="w-3 h-3 rounded-full bg-blue-500 mr-2"></span> 专家节点
+                </div>
+<div class="flex items-center text-xs font-bold text-slate-700">
+<span class="w-3 h-3 rounded-full bg-orange-500 mr-2"></span> 企业节点
+                </div>
+<div class="flex items-center text-xs font-bold text-slate-700">
+<span class="w-3 h-3 rounded-full bg-emerald-500 mr-2"></span> 专利/论文
+                </div>
+<div class="h-px bg-gray-200 my-1"></div>
+<div class="flex items-center text-xs text-slate-500">
+<div class="w-8 h-px bg-gray-400 mr-2"></div> 确切关联
+                </div>
+<div class="flex items-center text-xs text-slate-500">
+<div class="w-8 h-px border-t border-dashed border-gray-400 mr-2"></div> 预测/隐含关联
+                </div>
+</div>
+</div>
+</div>
+</div>
+<script>
+    // Configuration & Mock Data Generator
+    const MOCK_DATA = {
+        expert: Array.from({ length: 15 }, (_, i) => ({
+            id: i + 1,
+            name: ['张胜', '李华', '王利民', '陈建国', '刘洋', '孙志远', '周明', '赵敏', '吴刚', '郑凯', '徐磊', '朱辉', '高山', '林静', '马腾'][i],
+            affiliation: '上海交通大学 / 瑞金医院',
+            reason: i === 0 ? '首次提出镁基支架免疫调节理论' : '在相关领域有共同专利合作',
+            score: Math.floor(Math.random() * 40) + 60
+        })),
+        enterprise: Array.from({ length: 15 }, (_, i) => ({
+            id: i + 1,
+            name: ['上海研产生物科技有限公司', '迈瑞医疗', '联影医疗', '恒瑞医药', '药明康德', '微创医疗', '威高股份', '乐普医疗', '鱼跃医疗', '华大基因', '安图生物', '万孚生物', '新华医疗', '迪安诊断', '金域医学'][i],
+            legal: '张胜',
+            reason: '专家持股并担任首席科学家',
+            score: Math.floor(Math.random() * 50) + 50
+        })),
+        patent: Array.from({ length: 15 }, (_, i) => ({
+            id: i + 1,
+            name: `一种具有免疫调节功能的镁基生物活性支架 - ${i+1}`,
+            pubNo: `CN117${123456 + i}A`,
+            reason: '涉及镁合金支架核心专利',
+            score: Math.floor(Math.random() * 40) + 60
+        })),
+        paper: Array.from({ length: 15 }, (_, i) => ({
+            id: i + 1,
+            name: `Immune-modulatory Magnesium Scaffolds Study Vol.${i+1}`,
+            author: 'Zhang S., et al.',
+            reason: '该领域高引奠基性文献',
+            score: Math.floor(Math.random() * 30) + 70
+        })),
+        product: Array.from({ length: 5 }, (_, i) => ({
+            id: i + 1,
+            name: ['可降解镁金属接骨螺钉', '骨科手术导航系统', '生物活性骨填充材料', '定制化钛合金关节', '智能康复外骨骼'][i],
+            regNo: `国械注准2025313100${i}`,
+            reason: '已转化并在研产品',
+            score: Math.floor(Math.random() * 20) + 80
+        }))
+    };
+
+    function populateTables() {
+        const categories = ['expert', 'enterprise', 'patent', 'paper', 'product'];
+        categories.forEach(cat => {
+            const tbody = document.getElementById(`${cat}TableBody`);
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            const data = MOCK_DATA[cat];
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-blue-50 transition-colors';
+                
+                let cells = '';
+                if (cat === 'expert') {
+                    cells = `
+                        <td class="px-6 py-4">${item.id}</td>
+                        <td class="px-6 py-4 font-bold text-[#1a73e8]">${item.name}</td>
+                        <td class="px-6 py-4 text-slate-600">${item.affiliation}</td>
+                        <td class="px-6 py-4"><button onclick="openModal('expertModal')" class="text-[#1a73e8] hover:underline flex items-center"><span class="iconify mr-1" data-icon="material-symbols:info-outline"></span> 详情</button></td>
+                        <td class="px-6 py-4 text-slate-500 italic">"${item.reason}"</td>
+                        <td class="px-6 py-4"><a href="scholar.html" class="text-slate-400 hover:text-blue-600"><span class="iconify text-xl" data-icon="material-symbols:open-in-new"></span></a></td>
+                    `;
+                } else if (cat === 'enterprise') {
+                    cells = `
+                        <td class="px-6 py-4">${item.id}</td>
+                        <td class="px-6 py-4 font-bold text-[#1a73e8]">${item.name}</td>
+                        <td class="px-6 py-4 text-slate-600">${item.legal}</td>
+                        <td class="px-6 py-4"><button onclick="openModal('companyModal')" class="text-[#1a73e8] hover:underline flex items-center"><span class="iconify mr-1" data-icon="material-symbols:business-center-outline"></span> 画像</button></td>
+                        <td class="px-6 py-4 text-slate-500 italic">"${item.reason}"</td>
+                        <td class="px-6 py-4 text-slate-400 hover:text-blue-600 cursor-pointer"><span class="iconify text-xl" data-icon="material-symbols:link"></span></td>
+                    `;
+                } else if (cat === 'patent') {
+                    cells = `
+                        <td class="px-6 py-4">${item.id}</td>
+                        <td class="px-6 py-4 font-bold text-[#1a73e8]">${item.name}</td>
+                        <td class="px-6 py-4 text-slate-600">${item.pubNo}</td>
+                        <td class="px-6 py-4"><button onclick="openModal('patentModal')" class="text-[#1a73e8] hover:underline flex items-center"><span class="iconify mr-1" data-icon="material-symbols:gavel"></span> 权利要求</button></td>
+                        <td class="px-6 py-4 text-slate-500 italic">"${item.reason}"</td>
+                        <td class="px-6 py-4 text-slate-400 hover:text-blue-600 cursor-pointer"><span class="iconify text-xl" data-icon="material-symbols:link"></span></td>
+                    `;
+                } else if (cat === 'paper') {
+                    cells = `
+                        <td class="px-6 py-4">${item.id}</td>
+                        <td class="px-6 py-4 font-bold text-[#1a73e8]">${item.name}</td>
+                        <td class="px-6 py-4 text-slate-600">${item.author}</td>
+                        <td class="px-6 py-4"><button onclick="openModal('paperModal')" class="text-[#1a73e8] hover:underline flex items-center"><span class="iconify mr-1" data-icon="material-symbols:article-outline"></span> 文献详情</button></td>
+                        <td class="px-6 py-4 text-slate-500 italic">"${item.reason}"</td>
+                        <td class="px-6 py-4 text-slate-400 hover:text-blue-600 cursor-pointer"><span class="iconify text-xl" data-icon="material-symbols:link"></span></td>
+                    `;
+                } else if (cat === 'product') {
+                    cells = `
+                        <td class="px-6 py-4">${item.id}</td>
+                        <td class="px-6 py-4 font-bold text-[#1a73e8]">${item.name}</td>
+                        <td class="px-6 py-4 text-slate-600">${item.regNo}</td>
+                        <td class="px-6 py-4"><button onclick="openModal('productModal')" class="text-[#1a73e8] hover:underline flex items-center"><span class="iconify mr-1" data-icon="material-symbols:inventory-2-outline"></span> 详情</button></td>
+                        <td class="px-6 py-4 text-slate-500 italic">"${item.reason}"</td>
+                        <td class="px-6 py-4 text-slate-400 hover:text-blue-600 cursor-pointer"><span class="iconify text-xl" data-icon="material-symbols:link"></span></td>
+                    `;
+                }
+                tr.innerHTML = cells;
+                tbody.appendChild(tr);
+            });
+        });
+    }
+
+    // Graph Logic
+    let myChart = null;
+
+    function initGraph(containerId) {
+        const container = document.getElementById(containerId);
+        if (myChart) { myChart.dispose(); }
+        myChart = echarts.init(container);
+    }
+
+    function generateGraphData(cat) {
+        const centerNode = { id: 'center', name: '张胜 (上海交通大学)', symbolSize: 60, itemStyle: { color: '#1a73e8' }, label: { show: true, position: 'bottom' } };
+        const categories = [
+            { name: '中心节点' }, { name: '专家' }, { name: '企业' }, { name: '专利' }, { name: '论文' }, { name: '产品' }
+        ];
+        
+        const nodes = [centerNode];
+        const links = [];
+        const catMap = { expert: 1, enterprise: 2, patent: 3, paper: 4, product: 5 };
+        const colors = { expert: '#3b82f6', enterprise: '#f97316', patent: '#10b981', paper: '#8b5cf6', product: '#ef4444' };
+
+        if (cat === 'integrated') {
+            Object.keys(catMap).forEach(key => {
+                const subData = MOCK_DATA[key].slice(0, 4);
+                subData.forEach((item, idx) => {
+                    const nodeId = `${key}_${idx}`;
+                    // Size according to score
+                    const size = 15 + (item.score - 50) / 2;
+                    nodes.push({ id: nodeId, name: item.name, symbolSize: size, category: catMap[key], itemStyle: { color: colors[key] } });
+                    links.push({
+                        source: nodeId,
+                        target: 'center',
+                        lineStyle: { type: idx % 2 === 0 ? 'solid' : 'dashed', width: 2 },
+                        symbol: ['none', 'arrow']
+                    });
+                });
+            });
+        } else {
+            MOCK_DATA[cat].slice(0, 10).forEach((item, idx) => {
+                const nodeId = `${cat}_${idx}`;
+                const size = 20 + (item.score - 50) / 1.5;
+                nodes.push({ id: nodeId, name: item.name, symbolSize: size, itemStyle: { color: colors[cat] } });
+                links.push({
+                    source: nodeId,
+                    target: 'center',
+                    lineStyle: { type: idx % 3 === 0 ? 'dashed' : 'solid', width: 2 },
+                    symbol: ['none', 'arrow']
+                });
+            });
+        }
+
+        return { nodes, links, categories };
+    }
+
+    function renderGraph(data) {
+        const option = {
+            tooltip: {},
+            legend: [{ data: data.categories.map(a => a.name), orient: 'vertical', left: 20, top: 20 }],
+            series: [{
+                type: 'graph',
+                layout: 'force',
+                data: data.nodes,
+                links: data.links,
+                categories: data.categories,
+                roam: true,
+                label: { show: false },
+                force: { repulsion: 1000, edgeLength: 150 },
+                lineStyle: { color: 'source', curveness: 0.1 }
+            }]
+        };
+        myChart.setOption(option);
+    }
+
+    function showCategoryGraph(cat) {
+        openModal('graphModal');
+        setTimeout(() => {
+            initGraph('mainGraph');
+            renderGraph(generateGraphData(cat));
+        }, 100);
+    }
+
+    function showIntegratedGraph() {
+        openModal('graphModal');
+        setTimeout(() => {
+            initGraph('mainGraph');
+            renderGraph(generateGraphData('integrated'));
+        }, 100);
+    }
+
+    // Export & Share Logic
+    async function exportGraph(type) {
+        const url = myChart.getDataURL({ pixelRatio: 2, backgroundColor: '#fff' });
+        if (type === 'img') {
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `医研智库_知识图谱_${Date.now()}.png`;
+            link.click();
+        } else if (type === 'pdf') {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('l', 'mm', 'a4');
+            pdf.addImage(url, 'PNG', 15, 15, 267, 150);
+            pdf.save(`医研智库_知识图谱_${Date.now()}.pdf`);
+        }
+    }
+
+    function shareTo(platform) {
+        const msg = "我在医研智库发现了一个非常有价值的医学情报图谱，推荐你也看看！";
+        alert(`分享到 ${platform}：\n${msg}`);
+    }
+
+    function switchCategory(cat) {
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        document.getElementById(cat + '-content').classList.add('active');
+        document.getElementById('resultsTitle').innerText = `检索结果 - 关联${{expert:'专家', enterprise:'企业', patent:'专利', paper:'论文', product:'产品'}[cat]}`;
+    }
+
+    function openModal(id) { document.getElementById(id).style.display = "block"; }
+    function closeModal(id) { document.getElementById(id).style.display = "none"; }
+
+    function switchLang(lang) {
+        const isZH = lang === 'zh';
+        document.getElementById('claim-zh').classList.toggle('hidden', !isZH);
+        document.getElementById('claim-en').classList.toggle('hidden', isZH);
+        document.getElementById('btn-zh').className = isZH ? 'px-4 py-1 rounded-md bg-white shadow-sm text-emerald-700 text-sm font-bold' : 'px-4 py-1 rounded-md text-emerald-100 text-sm hover:bg-emerald-600';
+        document.getElementById('btn-en').className = !isZH ? 'px-4 py-1 rounded-md bg-white shadow-sm text-emerald-700 text-sm font-bold' : 'px-4 py-1 rounded-md text-emerald-100 text-sm hover:bg-emerald-600';
+    }
+
+    window.onclick = function(event) {
+        if (event.target.className === 'modal') event.target.style.display = "none";
+    }
+
+    window.onload = () => {
+        populateTables();
+    };
+</script>
+<!-- Pagination (Keep it simple) -->
+<div class="flex items-center justify-center space-x-2 pt-8 pb-12">
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:bg-gray-50 transition-colors">
+<span class="iconify" data-icon="material-symbols:chevron-left"></span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg bg-[#1a73e8] text-white font-bold shadow-md shadow-blue-200">1</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-slate-600 hover:bg-gray-50 transition-colors">2</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-slate-600 hover:bg-gray-50 transition-colors">3</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-slate-600 hover:bg-gray-50 transition-colors">4</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-slate-600 hover:bg-gray-50 transition-colors">5</button>
+<span class="px-2 text-gray-400">...</span>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-slate-600 hover:bg-gray-50 transition-colors">10</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:bg-gray-50 transition-colors">
+<span class="iconify" data-icon="material-symbols:chevron-right"></span>
+</button>
+</div>
+
+
+</body>
+</html>

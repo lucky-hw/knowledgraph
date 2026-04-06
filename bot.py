@@ -59,9 +59,9 @@ llm = load_llm(llm_name, logger=logger, config={"ollama_base_url": ollama_base_u
 
 
 llm_chain = configure_llm_only_chain(llm)
-rag_chain = configure_qa_rag_chain(
-    llm, embeddings, embeddings_store_url=url, username=username, password=password
-)
+# rag_chain = configure_qa_rag_chain(
+#     llm, embeddings, embeddings_store_url=url, username=username, password=password
+# )
 search_total = configure_search_chain(
     llm, embeddings, embeddings_store_url=url, username=username, password=password
 )
