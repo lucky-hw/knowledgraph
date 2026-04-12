@@ -20,8 +20,8 @@ COPY chains.py .
 COPY neo4query.py .
 COPY langgraph.json .
 COPY search_prompt.yml .
-COPY input_data ./input_data
 COPY images ./images
+COPY input_data ./input_data
 
 EXPOSE 8502
 

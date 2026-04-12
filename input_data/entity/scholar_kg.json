@@ -1,28 +1,28 @@
 {
-    "center_scholar": "张胜",
+    "center_scholar": "刘昌胜",
     "graph_nodes": [
-        {"name": "张胜", "kind": "scholar"},
-        {"name": "上海交通大学", "kind": "org"},
-        {"name": "恒瑞医药", "kind": "company"},
-        {"name": "李华", "kind": "scholar"},
-        {"name": "骨折愈合专利团", "kind": "patent_group"},
-        {"name": "瑞金医院", "kind": "org"},
-        {"name": "新型生物支架课题", "kind": "topic"}
+        {"name": "刘昌胜", "kind": "scholar"},
+        {"name": "华东理工大学", "kind": "org"},
+        {"name": "上海瑞邦生物材料有限公司", "kind": "company"},
+        {"name": "袁媛", "kind": "scholar"},
+        {"name": "磷酸钙骨水泥与骨修复专利族", "kind": "patent_group"},
+        {"name": "教育部医用生物材料工程研究中心", "kind": "topic"},
+        {"name": "山东威高医疗装备股份有限公司", "kind": "company"}
     ],
     "graph_links": [
-        {"source": "张胜", "target": "上海交通大学", "relation": "任职", "source_kind": "scholar", "target_kind": "org"},
-        {"source": "张胜", "target": "恒瑞医药", "relation": "技术顾问", "source_kind": "scholar", "target_kind": "company"},
-        {"source": "张胜", "target": "李华", "relation": "共同作者", "source_kind": "scholar", "target_kind": "scholar"},
-        {"source": "张胜", "target": "骨折愈合专利团", "relation": "核心发明人", "source_kind": "scholar", "target_kind": "patent_group"},
-        {"source": "张胜", "target": "瑞金医院", "relation": "主任医师", "source_kind": "scholar", "target_kind": "org"},
-        {"source": "恒瑞医药", "target": "骨折愈合专利团", "relation": "转化合作", "source_kind": "company", "target_kind": "patent_group"},
-        {"source": "新型生物支架课题", "target": "上海交通大学", "relation": "课题依托", "source_kind": "topic", "target_kind": "org"}
+        {"source": "刘昌胜", "target": "华东理工大学", "relation": "任职", "source_kind": "scholar", "target_kind": "org"},
+        {"source": "刘昌胜", "target": "上海瑞邦生物材料有限公司", "relation": "股东与转化关联", "source_kind": "scholar", "target_kind": "company"},
+        {"source": "刘昌胜", "target": "袁媛", "relation": "长期合作作者", "source_kind": "scholar", "target_kind": "scholar"},
+        {"source": "刘昌胜", "target": "磷酸钙骨水泥与骨修复专利族", "relation": "核心发明人", "source_kind": "scholar", "target_kind": "patent_group"},
+        {"source": "刘昌胜", "target": "教育部医用生物材料工程研究中心", "relation": "依托/建设", "source_kind": "scholar", "target_kind": "topic"},
+        {"source": "上海瑞邦生物材料有限公司", "target": "磷酸钙骨水泥与骨修复专利族", "relation": "专利实施与产品", "source_kind": "company", "target_kind": "patent_group"},
+        {"source": "山东威高医疗装备股份有限公司", "target": "上海瑞邦生物材料有限公司", "relation": "股东", "source_kind": "company", "target_kind": "company"}
     ],
     "milestones": [
-        {"年份": "2018", "事件": "博士毕业 · 复旦"},
-        {"年份": "2020", "事件": "首次提出 Mg-SCA 模型"},
-        {"年份": "2022", "事件": "获批国家自然科学基金"},
-        {"年份": "2024", "事件": "成立研产生物 (创始人)"},
-        {"年份": "2026.03", "事件": "完成阶段三期临床入组"}
+        {"年份": "1990s", "事件": "生物材料与磷酸钙骨水泥方向持续研究"},
+        {"年份": "2000s", "事件": "教育部医用生物材料工程研究中心等平台建设"},
+        {"年份": "2010s", "事件": "无机非金属生物材料战略研究与高水平论文积累"},
+        {"年份": "近年", "事件": "参股上海瑞邦等产学研转化布局"},
+        {"年份": "当前", "事件": "与 input_data 专利/论文数据同步的知识图谱锚点"}
     ]
 }

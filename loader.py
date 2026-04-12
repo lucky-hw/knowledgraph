@@ -12,26 +12,6 @@ load_dotenv(".env")
 url = os.getenv("NEO4J_URI")
 username = os.getenv("NEO4J_USERNAME")
 password = os.getenv("NEO4J_PASSWORD")
-ollama_base_url = os.getenv("OLLAMA_BASE_URL")
-embedding_model_name = os.getenv("EMBEDDING_MODEL")
-
-ollama_base_url = os.getenv("OLLAMA_BASE_URL")
-embedding_model_name = os.getenv("EMBEDDING_MODEL")
-
-ollama_base_url = os.getenv("OLLAMA_BASE_URL")
-embedding_model_name = os.getenv("EMBEDDING_MODEL")
-
-ollama_base_url = os.getenv("OLLAMA_BASE_URL")
-embedding_model_name = os.getenv("EMBEDDING_MODEL")
-
-ollama_base_url = os.getenv("OLLAMA_BASE_URL")
-embedding_model_name = os.getenv("EMBEDDING_MODEL")
-
-ollama_base_url = os.getenv("OLLAMA_BASE_URL")
-embedding_model_name = os.getenv("EMBEDDING_MODEL")
-
-ollama_base_url = os.getenv("OLLAMA_BASE_URL")
-embedding_model_name = os.getenv("EMBEDDING_MODEL")
 
 logger = get_logger(__name__)
 
@@ -213,6 +193,28 @@ def insert_company_data(data: dict) -> None:
             )
             distint_id += 1
         neo4j_graph.query(import_query)
+
+    for company in data["company"]:
+        rivals = company.get("竞品公司") or []
+        if not rivals:
+            continue
+        anchor = (company.get("公司名称") or "").strip()
+        note = (company.get("竞品说明") or "竞品关系").strip()
+        for rival in rivals:
+            rname = (rival or "").strip()
+            if not rname:
+                continue
+            neo4j_graph.query(
+                """
+                MATCH (a:公司 {名称: $anchor})
+                MATCH (b:公司 {名称: $rival})
+                MERGE (a)-[x:竞品]->(b)
+                SET x.说明 = $note
+                MERGE (b)-[y:竞品]->(a)
+                SET y.说明 = $note
+                """,
+                {"anchor": anchor, "rival": rname, "note": note},
+            )
 
 
 def insert_product_data(data: dict) -> None:
@@ -534,7 +536,9 @@ def insert_patent_data(data: dict) -> None:
 
 
 def insert_expert_data(data: dict) -> None:
-    for ex in data.get("experts", []):
+    core_name = (data.get("核心学者姓名") or "刘昌胜").strip()
+    experts = data.get("experts", [])
+    for ex in experts:
         name = (ex.get("姓名") or "").strip()
         if not name:
             continue
@@ -545,6 +549,8 @@ def insert_expert_data(data: dict) -> None:
         titles = ex.get("头衔")
         if isinstance(titles, list):
             titles = ";".join(titles)
+        is_core = bool(ex.get("核心学者"))
+        rel_summary = ex.get("与核心关系") or ""
         neo4j_graph.query(
             """
             MERGE (p:人员 {姓名: $name})
@@ -561,7 +567,9 @@ def insert_expert_data(data: dict) -> None:
                 p.研究方向 = $topics,
                 p.头衔 = $titles,
                 p.邮箱 = $em,
-                p.电话 = $ph
+                p.电话 = $ph,
+                p.核心学者 = $is_core,
+                p.与核心关系摘要 = $rel_summary
             """,
             {
                 "name": name,
@@ -577,7 +585,25 @@ def insert_expert_data(data: dict) -> None:
                 "titles": titles or "",
                 "em": ex.get("邮箱") or "",
                 "ph": ex.get("电话") or "",
+                "is_core": is_core,
+                "rel_summary": rel_summary,
             },
+        )
+    for ex in experts:
+        name = (ex.get("姓名") or "").strip()
+        if not name or name == core_name:
+            continue
+        rel_summary = (ex.get("与核心关系") or "").strip()
+        if not rel_summary:
+            continue
+        neo4j_graph.query(
+            """
+            MATCH (core:人员 {姓名: $core})
+            MATCH (p:人员 {姓名: $name})
+            MERGE (p)-[r:关联核心学者]->(core)
+            SET r.说明 = $rel
+            """,
+            {"core": core_name, "name": name, "rel": rel_summary},
         )
 
 
