@@ -295,6 +295,12 @@ def insert_product_data(data: dict) -> None:
                 + _cy_escape(product["关联依据"])
                 + '"\n'
             )
+        if product.get("变更情况"):
+            import_query += (
+                'SET product.变更情况 = "'
+                + _cy_escape(product["变更情况"])
+                + '"\n'
+            )
         neo4j_graph.query(import_query)
 
 
